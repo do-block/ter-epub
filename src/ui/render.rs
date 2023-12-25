@@ -1,24 +1,69 @@
 use ratatui::{
     layout::{Constraint, Direction, Layout},
     style::{Color, Modifier, Style},
-    widgets::{Block, Borders, List, ListDirection, Paragraph, Wrap},
+    text::{Span, Text},
+    widgets::{Block, Borders, List, ListDirection, ListItem, Paragraph, Wrap},
     Frame,
 };
 
 use crate::book::Book;
 
 pub fn render(frame: &mut Frame, book: &Book) {
-    let mut index = 1;
+    let mut index = 0;
+    let mut content_title = String::new();
+
     let items = book
         .toc
         .iter()
         .map(|item| {
-            // item.title.clone()
-            // index 从 1 开始
+            let mut select_tag = ' ';
+            let mut fg = Style::default().fg(Color::LightCyan);
+
+            if index == book.selected {
+                content_title = item.title.clone();
+                select_tag = '*';
+                fg = get_select_fg(true);
+            }
+
+            let mut text = Text::default();
+
+            let mut extends = vec![];
+
+            extends.push(Span::styled(
+                format!("{} {}", select_tag, item.title.clone()),
+                fg,
+            ));
+
             index += 1;
-            format!("第{}章. {}", index, item.title.clone())
+
+            if !item.children.is_empty() {
+                item.children.iter().for_each(|child| {
+                    if child.title.trim() != item.title.trim() {
+                        let mut select_tag = ' ';
+
+                        let mut fg = Style::default().fg(Color::White);
+
+                        if index == book.selected {
+                            content_title = child.title.clone();
+                            select_tag = '*';
+                            fg = get_select_fg(true);
+                        }
+
+                        extends.push(Span::styled(
+                            format!("    {} {}", select_tag, child.title.clone()),
+                            fg,
+                        ));
+                    }
+
+                    index += 1;
+                });
+            }
+
+            text.extend(extends);
+
+            ListItem::new(text)
         })
-        .collect::<Vec<String>>();
+        .collect::<Vec<ListItem>>();
 
     let list = List::new(items)
         .block(Block::default().title("大纲").borders(Borders::ALL))
@@ -35,7 +80,7 @@ pub fn render(frame: &mut Frame, book: &Book) {
 
     frame.render_widget(list, layout[0]);
 
-    let content = book.context.clone();
+    let content = format!("{}:\n\n {}", content_title, book.context);
 
     frame.render_widget(
         Paragraph::new(content)
@@ -43,4 +88,12 @@ pub fn render(frame: &mut Frame, book: &Book) {
             .wrap(Wrap { trim: true }),
         layout[1],
     );
+}
+
+fn get_select_fg(light: bool) -> Style {
+    if light {
+        Style::default().bg(Color::LightBlue).fg(Color::White)
+    } else {
+        Style::default().bg(Color::Blue).fg(Color::Cyan)
+    }
 }

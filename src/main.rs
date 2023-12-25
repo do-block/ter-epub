@@ -2,7 +2,6 @@ use container::Container;
 use dirs_next::home_dir;
 use quick_xml::de::from_str;
 use quick_xml::{self, Reader};
-use serde_json;
 use std::fs;
 use std::fs::File;
 use std::io::{self, Read, Write};
@@ -12,7 +11,6 @@ mod book;
 mod cache;
 mod container;
 mod explorer;
-mod htmltotext;
 mod opf;
 mod toc;
 mod ui;
@@ -30,20 +28,29 @@ const TOC_FILE_NAME: &str = ".dtoc";
 fn parse_container_xml(xml: &str) -> Container {
     let mut reader = Reader::from_str(xml);
     reader.trim_text(true);
-    from_str(&xml).expect("Failed to parse container.xml")
+    from_str(xml).expect("Failed to parse container.xml")
 }
 
 fn main() -> io::Result<()> {
+    let args: Vec<String> = std::env::args().collect();
+    // 第一个参数判断是否重新索引
+    let is_reindex = args.len() > 1 && args[1] == "reindex";
+
     let file_name = "test2.epub";
-    let dir = create_temp_dir(file_name).expect("Failed to create temp directory");
+    let dir = create_temp_dir(file_name, is_reindex).expect("Failed to create temp directory");
     let mut book = parse_epub_structure(file_name, dir)?;
 
+    // println!("book: {:#?}", book);
     let _ = ui::show::start(&mut book);
 
+    // test
+    // book.selected = 6;
+    // book.read_and_show_text();
+    
     Ok(())
 }
 
-fn parse_epub_structure<'a>(book_path: &str, dir: (PathBuf, bool)) -> io::Result<Book> {
+fn parse_epub_structure(book_path: &str, dir: (PathBuf, bool)) -> io::Result<Book> {
     let (dest_dir, is_cache) = dir;
 
     if !is_cache {
@@ -75,7 +82,7 @@ fn parse_epub_structure<'a>(book_path: &str, dir: (PathBuf, bool)) -> io::Result
                 } else {
                     println!("mimetype 文件读取成功: {}", content);
 
-                    let root_file = read_meata_inf(&path);
+                    let root_file = read_meta_inf(&path);
 
                     // println!("root_file: {:?}", root_file);
 
@@ -125,19 +132,14 @@ fn parse_epub_structure<'a>(book_path: &str, dir: (PathBuf, bool)) -> io::Result
         if !toc_file_path.exists() {
             book.generate_anchor_positions()?;
 
-            // println!("book: {:#?}", book);
-            // assert!(book.toc.len() == positions.len());
-
             let explorer = Explorer {
                 book: book.clone(),
                 position: 0,
                 selected: 0,
             };
-            println!("explorer: {:#?}", explorer);
             let mut toc_file = File::create(&toc_file_path)?;
             let toc_file_content = serde_json::to_string(&explorer)?;
             toc_file.write_all(toc_file_content.as_bytes())?;
-
             Ok(book)
         } else {
             let mut book = File::open(&toc_file_path)?;
@@ -151,7 +153,7 @@ fn parse_epub_structure<'a>(book_path: &str, dir: (PathBuf, bool)) -> io::Result
     }
 }
 
-fn create_temp_dir(file_name: &str) -> Result<(PathBuf, bool), std::io::Error> {
+fn create_temp_dir(file_name: &str, is_reindex: bool) -> Result<(PathBuf, bool), std::io::Error> {
     let mut is_exist = false;
 
     let mut temp_dir = home_dir().ok_or(std::io::Error::new(
@@ -166,7 +168,7 @@ fn create_temp_dir(file_name: &str) -> Result<(PathBuf, bool), std::io::Error> {
 
     temp_dir.push(file_name);
 
-    if !temp_dir.exists() {
+    if !temp_dir.exists() || is_reindex {
         fs::create_dir_all(&temp_dir)?;
     } else {
         is_exist = true;
@@ -175,7 +177,7 @@ fn create_temp_dir(file_name: &str) -> Result<(PathBuf, bool), std::io::Error> {
     Ok((temp_dir, is_exist))
 }
 
-fn read_meata_inf(path: &PathBuf) -> String {
+fn read_meta_inf(path: &PathBuf) -> String {
     // 读取 META_INF/container.xml 文件,获取 OEBPS 文件夹的路径
     let container_xml_path = path.parent().unwrap().join("META-INF/container.xml");
 

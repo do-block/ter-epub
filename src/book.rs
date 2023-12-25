@@ -1,14 +1,13 @@
 use std::{
     fs::File,
-    io::{BufRead, BufReader, Read},
-    mem,
+    io::{BufRead, BufReader},
     path::PathBuf,
 };
 
 use regex::Regex;
-use serde::{Serialize,Deserialize};
+use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Default, Clone,Serialize, Deserialize)]
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
 pub struct Book {
     pub path: PathBuf,
     pub title: String,
@@ -31,61 +30,116 @@ pub struct Toc {
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
 pub struct Anchor {
     pub id: String,
-    pub position: usize,
+    pub start_pos: usize,
+    pub end_pos: usize,
 }
 
 impl Book {
     // 读取章节文件
-    pub fn read_text(&mut self) {
+    pub fn read_and_show_text(&mut self) {
         if self.selected >= self.toc.len() {
             return;
         }
 
         let toc = &self.toc[self.selected];
-        let file = self.path.join("OEBPS").join(&toc.path);
+        let file_path = self.path.join("OEBPS").join(&toc.path);
 
-        if file.exists() {
+        if file_path.exists() {
+            let file = File::open(&file_path).unwrap();
+            let reader = BufReader::new(file);
             let mut content = String::new();
-            let mut file = File::open(&file).unwrap();
 
-            file.read_to_string(&mut content).unwrap();
+            let start = toc.anchor.start_pos;
+            let end = toc.anchor.end_pos;
 
-            self.context = content.clone();
+            if start == 0 && end == 0 {
+                // 如果start和end为0，读取整个文件
+                content = reader
+                    .lines()
+                    .map(|line| line.unwrap())
+                    .collect::<Vec<String>>()
+                    .join("\n");
+            } else {
+                // 仅读取指定范围的行
+                for (index, line) in reader.lines().enumerate() {
+                    if index >= start && index <= end {
+                        content.push_str(&line.unwrap());
+                        content.push('\n');
+                    }
+                }
+            }
+
+            self.context = content;
         }
     }
 
     pub fn generate_anchor_positions(&mut self) -> Result<(), std::io::Error> {
-        // TODO: 查找位置的代码性能上需要优化
-        let mut temp_toc = mem::replace(&mut self.toc, Vec::new());
+        let mut anchor_positions = Vec::new();
 
+        // 收集所有锚点的位置
+        for toc in &self.toc {
+            self.collect_anchor_positions(&toc, &mut anchor_positions)?;
+        }
+
+        let mut temp_toc = std::mem::take(&mut self.toc);
+
+        // 为每个 TOC 项设置 start_pos 和 end_pos
         for toc in &mut temp_toc {
-            self.process_toc_item(toc)?;
+            self.process_toc_item(toc, &anchor_positions)?;
         }
 
         self.toc = temp_toc;
+
         Ok(())
     }
 
-    fn process_toc_item(&mut self, toc: &mut Toc) -> Result<(), std::io::Error> {
-        if !toc.anchor.id.is_empty() {
-            let path = self.path.join("OEBPS").join(&toc.path);
-            let file = File::open(&path)?;
-            let reader = BufReader::new(file);
+    fn collect_anchor_positions(
+        &self,
+        toc: &Toc,
+        positions: &mut Vec<(String, usize)>,
+    ) -> Result<(), std::io::Error> {
+        let path = self.path.join("OEBPS").join(&toc.path);
+        let file = File::open(&path)?;
+        let reader = BufReader::new(file);
 
-            let re = Regex::new(&format!(r#"id="{}""#, toc.anchor.id)).unwrap();
+        let re = Regex::new(r#"id="([^"]*)""#).unwrap();
 
-            for (num, line) in reader.lines().enumerate() {
-                let line = line?;
-                if re.is_match(&line) {
-                    toc.anchor.position = num;
-                    break;
+        for (num, line) in reader.lines().enumerate() {
+            let line = line?;
+            if let Some(caps) = re.captures(&line) {
+                if let Some(id) = caps.get(1) {
+                    positions.push((id.as_str().to_string(), num));
                 }
             }
         }
 
-        for child in &mut toc.children {
-            self.process_toc_item(child)?;
+        Ok(())
+    }
+
+    fn process_toc_item(
+        &mut self,
+        toc: &mut Toc,
+        positions: &[(String, usize)],
+    ) -> Result<(), std::io::Error> {
+        if let Some(pos) = positions.iter().find(|(id, _)| *id == toc.anchor.id) {
+            toc.anchor.start_pos = pos.1;
+
+            if let Some((_, next_pos)) = positions
+                .iter()
+                .skip_while(|&(id, _)| *id != toc.anchor.id)
+                .nth(1)
+            {
+                toc.anchor.end_pos = *next_pos;
+            } else {
+                toc.anchor.end_pos = self.context.lines().count();
+            }
         }
+
+        // 递归地处理子 TOC 项
+        for child in &mut toc.children {
+            self.process_toc_item(child, positions)?;
+        }
+
         Ok(())
     }
 }

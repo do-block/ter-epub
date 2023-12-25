@@ -40,10 +40,10 @@ impl NavPoint {
                 .map(|nav_point| Toc {
                     path: self.content.get_pure_path(),
                     title: nav_point.nav_label.text.clone(),
-                    // anchor: nav_point.content.get_anchor(),
                     anchor: Anchor {
                         id: nav_point.content.get_anchor_id(),
-                        position: 0,
+                        start_pos: 0,
+                        end_pos: 0,
                     },
                     children: vec![],
                 })
@@ -54,10 +54,10 @@ impl NavPoint {
         Toc {
             path: self.content.get_pure_path(),
             title: self.nav_label.text.clone(),
-            // anchor: self.content.get_anchor(),
             anchor: Anchor {
                 id: self.content.get_anchor_id(),
-                position: 0,
+                start_pos: 0,
+                end_pos: 0,
             },
             children,
         }
@@ -93,10 +93,10 @@ pub struct NavLabel {
 
 impl Ncx {
     pub fn parse(xml_text: &str) -> Self {
-        let mut reader = Reader::from_str(&xml_text);
+        let mut reader = Reader::from_str(xml_text);
         reader.trim_text(true);
 
-        from_str(&xml_text).unwrap()
+        from_str(xml_text).unwrap()
     }
 
     pub fn read_text(path: &PathBuf) -> Self {

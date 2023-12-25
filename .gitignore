@@ -1,6 +1,5 @@
 /target
 *.epub
-*.epub
 .DS_Store
 .idea
 .vscode
