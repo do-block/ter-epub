@@ -2,15 +2,18 @@ use ratatui::{
     layout::{Constraint, Direction, Layout},
     style::{Color, Modifier, Style},
     text::{Span, Text},
-    widgets::{Block, Borders, List, ListDirection, ListItem, Paragraph, Wrap},
+    widgets::{block::Title, Block, Borders, List, ListDirection, ListItem, Paragraph, Wrap},
     Frame,
 };
+use ratatui::{prelude::*, widgets::*};
 
-use html2text::{config, render::text_renderer::TrivialDecorator, from_read_with_decorator};
+use html2text::{from_read_with_decorator, render::text_renderer::TrivialDecorator};
 
 use crate::book::Book;
 
-pub fn render(frame: &mut Frame, book: &Book) {
+use super::event::App;
+
+pub fn render(frame: &mut Frame, book: &Book, app: &mut App) {
     let mut content_title = String::new();
 
     let mut index = 1;
@@ -68,32 +71,56 @@ pub fn render(frame: &mut Frame, book: &Book) {
         })
         .collect::<Vec<ListItem>>();
 
+    let mut outline_titile = Title::from("大纲".gray().on_white());
+
+    if !app.focus_content {
+        outline_titile = Title::from("大纲 @c".white().bold().on_gray());
+    }
     let list = List::new(items)
-        .block(Block::default().title("大纲").borders(Borders::ALL))
+        .block(Block::default().title(outline_titile).borders(Borders::ALL))
         .style(Style::default().fg(Color::White))
         .highlight_style(Style::default().add_modifier(Modifier::ITALIC))
         .highlight_symbol(">>")
         .repeat_highlight_symbol(true)
         .direction(ListDirection::TopToBottom);
 
+    let area = frame.size();
+
     let layout = Layout::default()
         .direction(Direction::Horizontal)
         .constraints(vec![Constraint::Min(30), Constraint::Min(0)])
-        .split(frame.size());
+        .split(area);
 
     frame.render_widget(list, layout[0]);
 
-   let pure_text = 
-        from_read_with_decorator(book.context.as_bytes(), 1400 , TrivialDecorator::new());
+    let pure_text =
+        from_read_with_decorator(book.context.as_bytes(), 1400, TrivialDecorator::new());
 
     let content = format!("{}:\n\n {}", content_title, pure_text);
 
+    // -------- scroll --------
+    let scrollbar = Scrollbar::default()
+        .orientation(ScrollbarOrientation::VerticalRight)
+        .begin_symbol(Some("↑"))
+        .end_symbol(Some("↓"));
+
+    let line_count = content.lines().count();
+
+    app.vertical_scroll_state = app.vertical_scroll_state.content_length(line_count);
+
+    let mut content_title = Title::from("内容".gray().on_white());
+
+    if app.focus_content {
+        content_title = Title::from("内容 @c".white().bold().on_gray());
+    }
     frame.render_widget(
         Paragraph::new(content)
-            .block(Block::default().title("内容").borders(Borders::ALL))
-            .wrap(Wrap { trim: true }),
+            .block(Block::default().title(content_title).borders(Borders::ALL))
+            .wrap(Wrap { trim: true })
+            .scroll((app.vertical_scroll as u16, 0)),
         layout[1],
     );
+    frame.render_stateful_widget(scrollbar, layout[1], &mut app.vertical_scroll_state);
 }
 
 fn get_select_fg(light: bool) -> Style {

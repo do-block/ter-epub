@@ -3,6 +3,7 @@ use crate::book::Book;
 use crossterm::event;
 use crossterm::event::{Event, KeyCode};
 use ratatui::backend::CrosstermBackend;
+use ratatui::widgets::ScrollbarState;
 use ratatui::Terminal;
 use std::io::{self, stdout};
 use std::time::Duration;
@@ -14,10 +15,21 @@ struct Selected {
     section: usize,
 }
 
+#[derive(Default)]
+pub struct App {
+    pub vertical_scroll_state: ScrollbarState,
+    pub horizontal_scroll_state: ScrollbarState,
+    pub vertical_scroll: usize,
+    pub horizontal_scroll: usize,
+    pub focus_content : bool,
+}
+
 pub fn handle_events(book: &mut Book) -> io::Result<()> {
     let mut chapter_input = String::new();
 
     let mut terminal = Terminal::new(CrosstermBackend::new(stdout()))?;
+
+    let mut app = App::default();
 
     loop {
         if crossterm::event::poll(Duration::from_millis(250))? {
@@ -25,22 +37,50 @@ pub fn handle_events(book: &mut Book) -> io::Result<()> {
                 if key.kind == event::KeyEventKind::Press {
                     match key.code {
                         KeyCode::Char('j') => {
-                            if book.selected < book.flat_toc.len() - 1 {
-                                book.selected += 1;
-                            } else {
-                                book.selected = 0;
-                            }
+                            if !app.focus_content {
+                                if book.selected < book.flat_toc.len() - 1 {
+                                    book.selected += 1;
+                                } else {
+                                    book.selected = 0;
+                                }
 
-                            book.read_and_show_text();
+                                app.vertical_scroll = 0;
+                                app.vertical_scroll_state =
+                                    app.vertical_scroll_state.position(app.vertical_scroll);
+
+                                book.read_and_show_text();
+                            } else {
+                                app.vertical_scroll = app.vertical_scroll.saturating_add(1);
+                                app.vertical_scroll_state =
+                                    app.vertical_scroll_state.position(app.vertical_scroll);
+                            }
                         }
                         KeyCode::Char('k') => {
-                            if book.selected > 0 {
-                                book.selected -= 1;
+                            if !app.focus_content {
+                                if book.selected > 0 {
+                                    book.selected -= 1;
+                                } else {
+                                    book.selected = book.flat_toc.len() - 1;
+                                }
+
+                                app.vertical_scroll = 0;
+                                app.vertical_scroll_state =
+                                    app.vertical_scroll_state.position(app.vertical_scroll);
+
+                                book.read_and_show_text();
                             } else {
-                                book.selected = book.flat_toc.len() - 1;
+                                app.vertical_scroll = app.vertical_scroll.saturating_sub(1);
+                                app.vertical_scroll_state =
+                                    app.vertical_scroll_state.position(app.vertical_scroll);
                             }
-                            book.read_and_show_text();
                         }
+                        KeyCode::Char('l') | KeyCode::Right => {
+                            app.focus_content = true;
+                        }
+                        KeyCode::Char('h') | KeyCode::Left => {
+                            app.focus_content = false;
+                        }
+
                         KeyCode::Char('q') => break,
                         KeyCode::Char('r') => {
                             book.read_and_show_text();
@@ -75,7 +115,7 @@ pub fn handle_events(book: &mut Book) -> io::Result<()> {
         }
 
         terminal.draw(|f| {
-            render(f, &book);
+            render(f, &book,  &mut app);
         })?;
     }
     Ok(())

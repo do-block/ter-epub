@@ -8,6 +8,7 @@ use std::io::{self, stdout};
 
 pub fn start(book: &mut Book) -> io::Result<()> {
     enable_raw_mode()?;
+
     stdout().execute(EnterAlternateScreen)?;
 
     handle_events(book)?;
