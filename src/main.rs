@@ -40,13 +40,13 @@ fn main() -> io::Result<()> {
     let dir = create_temp_dir(file_name, is_reindex).expect("Failed to create temp directory");
     let mut book = parse_epub_structure(file_name, dir)?;
 
-    // println!("book: {:#?}", book);
+    // println!("book: {:?}", book);
     let _ = ui::show::start(&mut book);
 
-    // test
+    // // test
     // book.selected = 6;
     // book.read_and_show_text();
-    
+
     Ok(())
 }
 
@@ -121,7 +121,8 @@ fn parse_epub_structure(book_path: &str, dir: (PathBuf, bool)) -> io::Result<Boo
             language: metadata.language,
             date: metadata.date,
             author: metadata.creator,
-            selected: 0,
+            selected: 1,
+            flat_toc: vec![],
             context: "empty".to_string(),
         };
 
@@ -131,6 +132,7 @@ fn parse_epub_structure(book_path: &str, dir: (PathBuf, bool)) -> io::Result<Boo
         // 如果文件存在，提示超过30天，需要更新索引吗？
         if !toc_file_path.exists() {
             book.generate_anchor_positions()?;
+            book.flatten_toc();
 
             let explorer = Explorer {
                 book: book.clone(),

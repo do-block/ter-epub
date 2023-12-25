@@ -6,11 +6,14 @@ use ratatui::{
     Frame,
 };
 
+use html2text::{config, render::text_renderer::TrivialDecorator, from_read_with_decorator};
+
 use crate::book::Book;
 
 pub fn render(frame: &mut Frame, book: &Book) {
-    let mut index = 0;
     let mut content_title = String::new();
+
+    let mut index = 1;
 
     let items = book
         .toc
@@ -80,7 +83,10 @@ pub fn render(frame: &mut Frame, book: &Book) {
 
     frame.render_widget(list, layout[0]);
 
-    let content = format!("{}:\n\n {}", content_title, book.context);
+   let pure_text = 
+        from_read_with_decorator(book.context.as_bytes(), 1400 , TrivialDecorator::new());
+
+    let content = format!("{}:\n\n {}", content_title, pure_text);
 
     frame.render_widget(
         Paragraph::new(content)

@@ -19,15 +19,13 @@ pub fn handle_events(book: &mut Book) -> io::Result<()> {
 
     let mut terminal = Terminal::new(CrosstermBackend::new(stdout()))?;
 
-    // let mut outline_select = Selected::default();
-
     loop {
         if crossterm::event::poll(Duration::from_millis(250))? {
             if let Event::Key(key) = crossterm::event::read()? {
                 if key.kind == event::KeyEventKind::Press {
                     match key.code {
                         KeyCode::Char('j') => {
-                            if book.selected < book.toc.len() - 1 {
+                            if book.selected < book.flat_toc.len() - 1 {
                                 book.selected += 1;
                             } else {
                                 book.selected = 0;
@@ -39,7 +37,7 @@ pub fn handle_events(book: &mut Book) -> io::Result<()> {
                             if book.selected > 0 {
                                 book.selected -= 1;
                             } else {
-                                book.selected = book.toc.len() - 1;
+                                book.selected = book.flat_toc.len() - 1;
                             }
                             book.read_and_show_text();
                         }
@@ -58,12 +56,9 @@ pub fn handle_events(book: &mut Book) -> io::Result<()> {
                                     book.selected = selected_chapter - 1;
                                     book.read_and_show_text();
                                 }
-                                // ...处理选择章节的逻辑...
-                                // println!("Selected chapter: {}", selected_chapter);
                             } else {
                                 // println!("Invalid chapter number");
                             }
-                            // 重置输入以准备下一次输入
                             chapter_input.clear();
                         }
                         KeyCode::Backspace => {

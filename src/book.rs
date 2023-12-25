@@ -17,6 +17,7 @@ pub struct Book {
     pub toc: Vec<Toc>,
     pub selected: usize,
     pub context: String,
+    pub flat_toc: Vec<FlatToc>,
 }
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
@@ -37,16 +38,21 @@ pub struct Anchor {
 impl Book {
     // 读取章节文件
     pub fn read_and_show_text(&mut self) {
-        if self.selected >= self.toc.len() {
+        // println!("self.flat_toc.len: {}", self.flat_toc.len());
+        // println!("self.selected :{}", self.selected);
+        if self.selected >= self.flat_toc.len() {
             return;
         }
 
-        let toc = &self.toc[self.selected];
+        // toc 是嵌套的
+
+        let toc = &self.flat_toc[self.selected];
         let file_path = self.path.join("OEBPS").join(&toc.path);
 
         if file_path.exists() {
             let file = File::open(&file_path).unwrap();
             let reader = BufReader::new(file);
+
             let mut content = String::new();
 
             let start = toc.anchor.start_pos;
@@ -142,10 +148,38 @@ impl Book {
 
         Ok(())
     }
+
+    // 扁平化 TOC 项
+    pub fn flatten_toc(&mut self) {
+        let mut flat_toc = Vec::new();
+        for toc in &self.toc {
+            self.flatten_toc_recursive(toc, &mut flat_toc)
+        }
+        self.flat_toc = flat_toc;
+    }
+
+    fn flatten_toc_recursive(&self, toc: &Toc, flat_tocs: &mut Vec<FlatToc>) {
+        flat_tocs.push(FlatToc {
+            title: toc.title.clone(),
+            path: toc.path.clone(),
+            anchor: toc.anchor.clone(),
+        });
+
+        for child in &toc.children {
+            self.flatten_toc_recursive(child, flat_tocs);
+        }
+    }
 }
 
 #[derive(Debug, Default)]
 pub struct TocPosition {
     pub start: usize,
     pub path: String,
+}
+
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
+pub struct FlatToc {
+    pub title: String,
+    pub path: String,
+    pub anchor: Anchor,
 }
