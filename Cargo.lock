@@ -319,6 +319,8 @@ dependencies = [
  "crossterm",
  "dirs-next",
  "html2text",
+ "html5ever",
+ "markup5ever_rcdom",
  "quick-xml",
  "ratatui",
  "regex",
@@ -552,6 +554,18 @@ dependencies = [
  "string_cache",
  "string_cache_codegen",
  "tendril",
+]
+
+[[package]]
+name = "markup5ever_rcdom"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b9521dd6750f8e80ee6c53d65e2e4656d7de37064f3a7a5d2d11d05df93839c2"
+dependencies = [
+ "html5ever",
+ "markup5ever",
+ "tendril",
+ "xml5ever",
 ]
 
 [[package]]

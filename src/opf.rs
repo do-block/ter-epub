@@ -7,8 +7,6 @@ use serde::Deserialize;
 use quick_xml::de::from_str;
 use quick_xml::{self, Reader};
 
-// use crate::htmltotext;
-
 const CHUNK_SIZE: usize = 110242; // 块大小，例如4KB
 
 #[derive(Debug, Default)]
@@ -97,21 +95,8 @@ impl Opf {
             .expect("Failed to read opf file");
 
         let package = Package::parse(&content);
-
-        // println!("xml_parser_result: {:?}\n", package);
-
         let spine_items = Opf::get_spines(&package.spine, &package.manifest);
-
-        println!("spine_items: {:#?}\n", spine_items);
-
-        // 这里要做处理,多个章节
-        // let selected_chapter = &spine_items[1];
-        // let selected_chapter_path = path.parent().unwrap().join(&selected_chapter.href);
-        // let file_path = selected_chapter_path.to_str().unwrap();
-        // let mut current_pos = 0;
-        // let opf_content = Opf::_load_more(file_path, &mut current_pos).unwrap();
-        // println!("opf_content: {}", opf_content);
-        // let text = htmltotext::run(&all_content);
+        // println!("spine_items: {:#?}\n", spine_items);
 
         Self {
             package,

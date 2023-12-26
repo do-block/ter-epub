@@ -6,11 +6,7 @@ use ratatui::{
     Frame,
 };
 use ratatui::{prelude::*, widgets::*};
-
-use html2text::{from_read_with_decorator, render::text_renderer::TrivialDecorator};
-
-use crate::book::Book;
-
+use crate::{book::Book, htmltotext::html_to_text};
 use super::app::App;
 
 pub fn render(frame: &mut Frame, book: &Book, app: &mut App) {
@@ -43,7 +39,7 @@ pub fn render(frame: &mut Frame, book: &Book, app: &mut App) {
                 if child.title.trim() != item.title.trim() {
                     let mut select_tag = ' ';
                     let mut fg = Style::default().fg(Color::White);
-                    if index == book.selected  {
+                    if index == book.selected {
                         content_title = child.title.clone();
                         select_tag = '*';
                         fg = get_select_fg(true);
@@ -93,14 +89,13 @@ pub fn render(frame: &mut Frame, book: &Book, app: &mut App) {
         &mut app.outline_vertical_scroll_state,
     );
     // -------- outline scroll config end --------
-
-    let pure_text =
-        from_read_with_decorator(book.context.as_bytes(), 1400, TrivialDecorator::new());
-
+    
+    let pure_text =  html_to_text(&book.context);
     let content = format!("{}:\n {}", content_title, pure_text);
 
     // -------- content scroll config start --------
     let content_line_count = content.lines().count();
+
     app.content_vertical_scroll_state = app
         .content_vertical_scroll_state
         .content_length(content_line_count);
@@ -108,7 +103,7 @@ pub fn render(frame: &mut Frame, book: &Book, app: &mut App) {
     let mut content_title = Title::from("内容".gray().on_white());
 
     if app.focus_content {
-        content_title = Title::from("内容 @按left或者h回到大纲".white().bold().on_gray());
+        content_title = Title::from("内容 [按left或者h回到大纲]".white().bold().on_gray());
     }
     frame.render_widget(
         Paragraph::new(content)

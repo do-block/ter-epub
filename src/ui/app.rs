@@ -38,6 +38,8 @@ impl App {
         self.outline_vertical_scroll_state = self
             .outline_vertical_scroll_state
             .position(self.outline_vertical_scroll);
+
+        self.reset_content_scroll();
     }
 
     pub fn outline_down(&mut self) {
@@ -45,6 +47,8 @@ impl App {
         self.outline_vertical_scroll_state = self
             .outline_vertical_scroll_state
             .position(self.outline_vertical_scroll);
+
+        self.reset_content_scroll();
     }
 
     pub fn reset_outline_scroll(&mut self) {
@@ -62,8 +66,5 @@ impl App {
             book.selected = 0;
             book.read_and_show_text();
         }
-    }
-
-    pub fn go_bottom(&mut self, book: &mut Book) {
     }
 }
