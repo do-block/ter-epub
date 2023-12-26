@@ -1,35 +1,18 @@
-use super::render::render;
+use super::{app, render::render};
 use crate::book::Book;
 use crossterm::event;
 use crossterm::event::{Event, KeyCode};
 use ratatui::backend::CrosstermBackend;
-use ratatui::widgets::ScrollbarState;
 use ratatui::Terminal;
 use std::io::{self, stdout};
 use std::time::Duration;
-
-// 大纲当前选定的章或者节
-#[derive(Debug, Default, Clone)]
-struct Selected {
-    chapter: usize,
-    section: usize,
-}
-
-#[derive(Default)]
-pub struct App {
-    pub vertical_scroll_state: ScrollbarState,
-    pub horizontal_scroll_state: ScrollbarState,
-    pub vertical_scroll: usize,
-    pub horizontal_scroll: usize,
-    pub focus_content : bool,
-}
 
 pub fn handle_events(book: &mut Book) -> io::Result<()> {
     let mut chapter_input = String::new();
 
     let mut terminal = Terminal::new(CrosstermBackend::new(stdout()))?;
 
-    let mut app = App::default();
+    let mut app = app::App::default();
 
     loop {
         if crossterm::event::poll(Duration::from_millis(250))? {
@@ -40,47 +23,50 @@ pub fn handle_events(book: &mut Book) -> io::Result<()> {
                             if !app.focus_content {
                                 if book.selected < book.flat_toc.len() - 1 {
                                     book.selected += 1;
-                                } else {
-                                    book.selected = 0;
                                 }
 
-                                app.vertical_scroll = 0;
-                                app.vertical_scroll_state =
-                                    app.vertical_scroll_state.position(app.vertical_scroll);
-
+                                app.outline_down();
                                 book.read_and_show_text();
                             } else {
-                                app.vertical_scroll = app.vertical_scroll.saturating_add(1);
-                                app.vertical_scroll_state =
-                                    app.vertical_scroll_state.position(app.vertical_scroll);
+                                app.content_down();
                             }
                         }
+
                         KeyCode::Char('k') => {
                             if !app.focus_content {
                                 if book.selected > 0 {
                                     book.selected -= 1;
-                                } else {
-                                    book.selected = book.flat_toc.len() - 1;
                                 }
-
-                                app.vertical_scroll = 0;
-                                app.vertical_scroll_state =
-                                    app.vertical_scroll_state.position(app.vertical_scroll);
-
+                                app.outline_up();
                                 book.read_and_show_text();
                             } else {
-                                app.vertical_scroll = app.vertical_scroll.saturating_sub(1);
-                                app.vertical_scroll_state =
-                                    app.vertical_scroll_state.position(app.vertical_scroll);
+                                app.content_up();
                             }
                         }
                         KeyCode::Char('l') | KeyCode::Right => {
                             app.focus_content = true;
+                            app.reset_content_scroll();
                         }
                         KeyCode::Char('h') | KeyCode::Left => {
                             app.focus_content = false;
                         }
-
+                        // 拦截g开头的按键
+                        KeyCode::Char('g') => {
+                            match crossterm::event::read()? {
+                                Event::Key(key) => match key.code {
+                                    KeyCode::Char('g') => {
+                                        app.go_top(book);
+                                    }
+                                    _ => {
+                                        // println!("key: {:?}", key);
+                                    }
+                                },
+                                _ => {}
+                            }
+                        }
+                        KeyCode::Char('G') => {
+                            // TODO: go to bottom
+                        }
                         KeyCode::Char('q') => break,
                         KeyCode::Char('r') => {
                             book.read_and_show_text();
@@ -115,7 +101,7 @@ pub fn handle_events(book: &mut Book) -> io::Result<()> {
         }
 
         terminal.draw(|f| {
-            render(f, &book,  &mut app);
+            render(f, &book, &mut app);
         })?;
     }
     Ok(())
