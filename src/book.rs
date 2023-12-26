@@ -38,13 +38,9 @@ pub struct Anchor {
 impl Book {
     // 读取章节文件
     pub fn read_and_show_text(&mut self) {
-        // println!("self.flat_toc.len: {}", self.flat_toc.len());
-        // println!("self.selected :{}", self.selected);
         if self.selected >= self.flat_toc.len() {
             return;
         }
-
-        // toc 是嵌套的
 
         let toc = &self.flat_toc[self.selected];
         let file_path = self.path.join("OEBPS").join(&toc.path);
@@ -52,9 +48,7 @@ impl Book {
         if file_path.exists() {
             let file = File::open(&file_path).unwrap();
             let reader = BufReader::new(file);
-
             let mut content = String::new();
-
             let start = toc.anchor.start_pos;
             let end = toc.anchor.end_pos;
 

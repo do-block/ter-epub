@@ -7,8 +7,6 @@ use serde::Deserialize;
 use quick_xml::de::from_str;
 use quick_xml::{self, Reader};
 
-const CHUNK_SIZE: usize = 110242; // 块大小，例如4KB
-
 #[derive(Debug, Default)]
 pub struct Opf {
     pub package: Package,
@@ -96,7 +94,6 @@ impl Opf {
 
         let package = Package::parse(&content);
         let spine_items = Opf::get_spines(&package.spine, &package.manifest);
-        // println!("spine_items: {:#?}\n", spine_items);
 
         Self {
             package,
@@ -138,7 +135,7 @@ impl Opf {
         let mut reader = BufReader::new(file);
         reader.seek(std::io::SeekFrom::Start(*current_pos))?;
 
-        let mut buffer = [0; CHUNK_SIZE];
+        let mut buffer = [0; 110242];
         let bytes_read = reader.read(&mut buffer)?;
         *current_pos += bytes_read as u64;
 

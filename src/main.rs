@@ -1,6 +1,5 @@
 use container::Container;
 use dirs_next::home_dir;
-use htmltotext::html_to_text;
 use quick_xml::de::from_str;
 use quick_xml::{self, Reader};
 use std::fs;
@@ -37,10 +36,15 @@ fn main() -> io::Result<()> {
     let args: Vec<String> = std::env::args().collect();
 
     let is_reindex = args.len() > 1 && args[1] == "reindex";
-    let file_name = "test.epub";
+    let file_name = "test2.epub";
     let dir = create_temp_dir(file_name, is_reindex).expect("Failed to create temp directory");
     let mut book = parse_epub_structure(file_name, dir)?;
+
     let _ = ui::show::start(&mut book);
+     
+    // let html_value =  "<p>Hello, <b>world!</b></p><pre><code>fn main() {\n    println!(\"Hello, world!\");\n}</code></pre>";
+    // let text = htmltotext::html_to_text(html_value);
+    // println!("text: {}", text);
 
     Ok(())
 }
