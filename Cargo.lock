@@ -318,7 +318,6 @@ version = "0.1.0"
 dependencies = [
  "crossterm",
  "dirs-next",
- "html2text",
  "html5ever",
  "markup5ever_rcdom",
  "quick-xml",
@@ -414,20 +413,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6c49c37c09c17a53d937dfbb742eb3a961d65a994e6bcdcf37e7399d0cc8ab5e"
 dependencies = [
  "digest",
-]
-
-[[package]]
-name = "html2text"
-version = "0.9.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e731d913e8ad94cb8acceb743a6630a78d32e3c410c78aaf00ed3bea91479a5e"
-dependencies = [
- "html5ever",
- "markup5ever",
- "tendril",
- "thiserror",
- "unicode-width",
- "xml5ever",
 ]
 
 [[package]]

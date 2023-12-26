@@ -19,7 +19,6 @@ pub fn render(frame: &mut Frame, book: &Book, app: &mut App) {
         .end_symbol(Some("↓"));
 
     let mut items = vec![];
-
     book.toc.iter().for_each(|item| {
         let mut select_tag = ' ';
         let mut fg = Style::default().fg(Color::LightCyan);
