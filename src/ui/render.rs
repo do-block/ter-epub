@@ -1,93 +1,119 @@
 use ratatui::{
     layout::{Constraint, Direction, Layout},
-    style::{Color, Modifier, Style},
-    text::{Span, Text},
-    widgets::{Block, Borders, List, ListDirection, ListItem, Paragraph, Wrap},
+    style::{Color, Style},
+    text::Span,
+    widgets::{block::Title, Block, Borders, Paragraph, Wrap},
     Frame,
 };
+use ratatui::{prelude::*, widgets::*};
+use crate::{book::Book, htmltotext::html_to_text};
+use super::app::App;
 
-use crate::book::Book;
-
-pub fn render(frame: &mut Frame, book: &Book) {
-    let mut index = 0;
+pub fn render(frame: &mut Frame, book: &Book, app: &mut App) {
     let mut content_title = String::new();
+    let mut index = 0;
 
-    let items = book
-        .toc
-        .iter()
-        .map(|item| {
-            let mut select_tag = ' ';
-            let mut fg = Style::default().fg(Color::LightCyan);
+    let scrollbar = Scrollbar::default()
+        .orientation(ScrollbarOrientation::VerticalRight)
+        .begin_symbol(Some("↑"))
+        .end_symbol(Some("↓"));
 
-            if index == book.selected {
-                content_title = item.title.clone();
-                select_tag = '*';
-                fg = get_select_fg(true);
-            }
+    let mut items = vec![];
 
-            let mut text = Text::default();
+    book.toc.iter().for_each(|item| {
+        let mut select_tag = ' ';
+        let mut fg = Style::default().fg(Color::LightCyan);
+        if index == book.selected {
+            content_title = item.title.clone();
+            select_tag = '*';
+            fg = get_select_fg(true);
+        }
 
-            let mut extends = vec![];
-
-            extends.push(Span::styled(
-                format!("{} {}", select_tag, item.title.clone()),
-                fg,
-            ));
-
-            index += 1;
-
-            if !item.children.is_empty() {
-                item.children.iter().for_each(|child| {
-                    if child.title.trim() != item.title.trim() {
-                        let mut select_tag = ' ';
-
-                        let mut fg = Style::default().fg(Color::White);
-
-                        if index == book.selected {
-                            content_title = child.title.clone();
-                            select_tag = '*';
-                            fg = get_select_fg(true);
-                        }
-
-                        extends.push(Span::styled(
-                            format!("    {} {}", select_tag, child.title.clone()),
-                            fg,
-                        ));
+        items.push(Line::from(vec![Span::styled(
+            format!("{} {}", select_tag, item.title.clone()),
+            fg,
+        )]));
+        index += 1;
+        if !item.children.is_empty() {
+            item.children.iter().for_each(|child| {
+                if child.title.trim() != item.title.trim() {
+                    let mut select_tag = ' ';
+                    let mut fg = Style::default().fg(Color::White);
+                    if index == book.selected {
+                        content_title = child.title.clone();
+                        select_tag = '*';
+                        fg = get_select_fg(true);
                     }
+                    items.push(Line::from(vec![Span::styled(
+                        format!("  {} {}", select_tag, child.title.clone()),
+                        fg,
+                    )]));
+                }
+                index += 1;
+            });
+        }
+    });
 
-                    index += 1;
-                });
-            }
-
-            text.extend(extends);
-
-            ListItem::new(text)
-        })
-        .collect::<Vec<ListItem>>();
-
-    let list = List::new(items)
-        .block(Block::default().title("大纲").borders(Borders::ALL))
-        .style(Style::default().fg(Color::White))
-        .highlight_style(Style::default().add_modifier(Modifier::ITALIC))
-        .highlight_symbol(">>")
-        .repeat_highlight_symbol(true)
-        .direction(ListDirection::TopToBottom);
+    let size = frame.size();
 
     let layout = Layout::default()
         .direction(Direction::Horizontal)
         .constraints(vec![Constraint::Min(30), Constraint::Min(0)])
-        .split(frame.size());
+        .split(size);
 
-    frame.render_widget(list, layout[0]);
+    // -------- outline scroll config start --------
+    let outline_line_count = items.len();
+    let outline_index_text = format!("[{}/{}]", outline_line_count + 1, book.selected + 1);
+    let mut outline_titile = Title::from(format!("大纲 {}", outline_index_text).white().on_gray());
+    if !app.focus_content {
+        outline_titile = Title::from(format!("大纲 {}", outline_index_text).gray().on_white());
+    }
+    app.outline_vertical_scroll_state = app
+        .outline_vertical_scroll_state
+        .content_length(outline_line_count);
+    frame.render_widget(
+        Paragraph::new(items)
+            .block(
+                Block::default()
+                    .title(outline_titile)
+                    .borders(Borders::ALL)
+                    .padding(Padding::new(0, 0, 0, 0)),
+            )
+            .style(Style::default().fg(Color::White))
+            .scroll((app.outline_vertical_scroll as u16, 0)),
+        layout[0],
+    );
+    frame.render_stateful_widget(
+        scrollbar.clone(),
+        layout[0],
+        &mut app.outline_vertical_scroll_state,
+    );
+    // -------- outline scroll config end --------
+    
+    let pure_text =  html_to_text(&book.context);
+    let content = format!("{}:\n {}", content_title, pure_text);
 
-    let content = format!("{}:\n\n {}", content_title, book.context);
+    // -------- content scroll config start --------
+    let content_line_count = content.lines().count();
 
+    app.content_vertical_scroll_state = app
+        .content_vertical_scroll_state
+        .content_length(content_line_count);
+
+    let mut content_title = Title::from("内容".gray().on_white());
+
+    if app.focus_content {
+        content_title = Title::from("内容 [按left或者h回到大纲]".white().bold().on_gray());
+    }
     frame.render_widget(
         Paragraph::new(content)
-            .block(Block::default().title("内容").borders(Borders::ALL))
-            .wrap(Wrap { trim: true }),
+            .block(Block::default().title(content_title).borders(Borders::ALL))
+            .wrap(Wrap { trim: true })
+            .scroll((app.content_vertical_scroll as u16, 0)),
         layout[1],
     );
+    frame.render_stateful_widget(scrollbar, layout[1], &mut app.content_vertical_scroll_state);
+    // -------- content  scroll config end --------
 }
 
 fn get_select_fg(light: bool) -> Style {

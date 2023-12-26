@@ -1,5 +1,6 @@
 use container::Container;
 use dirs_next::home_dir;
+use htmltotext::html_to_text;
 use quick_xml::de::from_str;
 use quick_xml::{self, Reader};
 use std::fs;
@@ -11,6 +12,7 @@ mod book;
 mod cache;
 mod container;
 mod explorer;
+mod htmltotext;
 mod opf;
 mod toc;
 mod ui;
@@ -33,20 +35,13 @@ fn parse_container_xml(xml: &str) -> Container {
 
 fn main() -> io::Result<()> {
     let args: Vec<String> = std::env::args().collect();
-    // 第一个参数判断是否重新索引
-    let is_reindex = args.len() > 1 && args[1] == "reindex";
 
-    let file_name = "test2.epub";
+    let is_reindex = args.len() > 1 && args[1] == "reindex";
+    let file_name = "test.epub";
     let dir = create_temp_dir(file_name, is_reindex).expect("Failed to create temp directory");
     let mut book = parse_epub_structure(file_name, dir)?;
-
-    // println!("book: {:#?}", book);
     let _ = ui::show::start(&mut book);
 
-    // test
-    // book.selected = 6;
-    // book.read_and_show_text();
-    
     Ok(())
 }
 
@@ -121,7 +116,8 @@ fn parse_epub_structure(book_path: &str, dir: (PathBuf, bool)) -> io::Result<Boo
             language: metadata.language,
             date: metadata.date,
             author: metadata.creator,
-            selected: 0,
+            selected: 1,
+            flat_toc: vec![],
             context: "empty".to_string(),
         };
 
@@ -131,6 +127,7 @@ fn parse_epub_structure(book_path: &str, dir: (PathBuf, bool)) -> io::Result<Boo
         // 如果文件存在，提示超过30天，需要更新索引吗？
         if !toc_file_path.exists() {
             book.generate_anchor_positions()?;
+            book.flatten_toc();
 
             let explorer = Explorer {
                 book: book.clone(),
