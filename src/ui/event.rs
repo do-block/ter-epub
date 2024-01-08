@@ -28,7 +28,9 @@ pub fn handle_events(book: &mut Book) -> io::Result<()> {
                                 app.outline_down();
                                 book.read_and_show_text();
                             } else {
-                                app.content_down();
+                                if app.content_vertical_scroll < book.context.lines().count() - 10 {
+                                    app.content_down();
+                                }
                             }
                         }
 

@@ -7,6 +7,8 @@ use std::{
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 
+use crate::htmltotext::html_to_text;
+
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
 pub struct Book {
     pub path: PathBuf,
@@ -69,7 +71,7 @@ impl Book {
                 }
             }
 
-            self.context = content;
+            self.context = html_to_text(&content);
         }
     }
 

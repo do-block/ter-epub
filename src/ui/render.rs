@@ -6,7 +6,7 @@ use ratatui::{
     Frame,
 };
 use ratatui::{prelude::*, widgets::*};
-use crate::{book::Book, htmltotext::html_to_text};
+use crate::book::Book;
 use super::app::App;
 
 pub fn render(frame: &mut Frame, book: &Book, app: &mut App) {
@@ -89,21 +89,20 @@ pub fn render(frame: &mut Frame, book: &Book, app: &mut App) {
     );
     // -------- outline scroll config end --------
     
-    let pure_text =  html_to_text(&book.context);
-    let content = format!("{}:\n {}", content_title, pure_text);
+    // let pure_text =  html_to_text(&book.context);
+    let content = format!("{}", &book.context);
 
     // -------- content scroll config start --------
-    let content_line_count = content.lines().count();
-
     app.content_vertical_scroll_state = app
         .content_vertical_scroll_state
-        .content_length(content_line_count);
+        .content_length(book.context.lines().count());
 
     let mut content_title = Title::from("内容".gray().on_white());
 
     if app.focus_content {
         content_title = Title::from("内容 [按left或者h回到大纲]".white().bold().on_gray());
     }
+
     frame.render_widget(
         Paragraph::new(content)
             .block(Block::default().title(content_title).borders(Borders::ALL))

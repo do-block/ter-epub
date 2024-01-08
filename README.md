@@ -43,7 +43,8 @@ cargo run -- path/to/your/book.epub
 ### 操作指南：
 - j 或 向下箭头：向下滚动
 - k 或 向上箭头：向上滚动
-- q：退出阅读器
+- q 退出阅读器
+- / 唤出搜索框
 - 数字键：快速跳转到对应的章节
 
 <img width="800" alt="image" src="https://github.com/error-moe/ter-epub/assets/62934849/8d3b5c1a-cf3e-4a3a-a0a7-4ccc09761dc0">
