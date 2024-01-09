@@ -11,7 +11,6 @@ mod book;
 mod cache;
 mod container;
 mod explorer;
-mod htmltotext;
 mod opf;
 mod toc;
 mod ui;
