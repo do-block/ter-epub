@@ -2,10 +2,10 @@ use container::Container;
 use dirs_next::home_dir;
 use quick_xml::de::from_str;
 use quick_xml::{self, Reader};
-use std::fs;
 use std::fs::File;
 use std::io::{self, Read, Write};
 use std::path::PathBuf;
+use std::{env, fs};
 
 mod book;
 mod cache;
@@ -32,12 +32,23 @@ fn parse_container_xml(xml: &str) -> Container {
 }
 
 fn main() -> io::Result<()> {
-    let args: Vec<String> = std::env::args().collect();
+    let args: Vec<String> = env::args().collect();
 
-    let is_reindex = args.len() > 1 && args[1] == "reindex";
-    let file_name = "test2.epub";
-    let dir = create_temp_dir(file_name, is_reindex).expect("Failed to create temp directory");
-    let mut book = parse_epub_structure(file_name, dir)?;
+    if args.len() < 2 {
+        println!("Usage: {} <path-to-epub-file>", args[0]);
+        return Ok(());
+    }
+    let epub_path = &args[1];
+    if !PathBuf::from(epub_path).exists() {
+        println!("File not found: {}", epub_path);
+        return Ok(());
+    }
+
+    let is_reindex = args.len() > 2 && args[2] == "reindex";
+    let releate_path = epub_path.split("/").last().unwrap();
+
+    let dir = create_temp_dir(releate_path, is_reindex).expect("Failed to create temp directory");
+    let mut book = parse_epub_structure(epub_path, dir)?;
 
     let _ = ui::show::start(&mut book);
 
@@ -153,9 +164,11 @@ fn create_temp_dir(file_name: &str, is_reindex: bool) -> Result<(PathBuf, bool),
         std::io::ErrorKind::NotFound,
         "Home directory not found",
     ))?;
+
     temp_dir.push(TEMP_DIR_NAME);
 
     if !temp_dir.exists() {
+        println!("enter create_dir_all");
         fs::create_dir_all(&temp_dir)?;
     }
 
