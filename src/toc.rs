@@ -34,22 +34,8 @@ pub struct NavPoint {
 
 impl NavPoint {
     pub fn get_toc(&self) -> Toc {
-        let children = match &self.nav_point {
-            Some(child_nav_point) => child_nav_point
-                .iter()
-                .map(|nav_point| Toc {
-                    path: self.content.get_pure_path(),
-                    title: nav_point.nav_label.text.clone(),
-                    anchor: Anchor {
-                        id: nav_point.content.get_anchor_id(),
-                        start_pos: 0,
-                        end_pos: 0,
-                    },
-                    children: vec![],
-                })
-                .collect(),
-            None => vec![],
-        };
+        // 使用辅助函数构建子目录
+        let children = self.build_children_toc(&self.nav_point);
 
         Toc {
             path: self.content.get_pure_path(),
@@ -60,6 +46,29 @@ impl NavPoint {
                 end_pos: 0,
             },
             children,
+        }
+    }
+
+    // 辅助函数，递归地构建子目录
+    fn build_children_toc(&self, nav_points: &Option<Vec<NavPoint>>) -> Vec<Toc> {
+        match nav_points {
+            Some(points) => points
+                .iter()
+                .map(|nav_point| {
+                    let sub_children = self.build_children_toc(&nav_point.nav_point);
+                    Toc {
+                        path: self.content.get_pure_path(),
+                        title: nav_point.nav_label.text.clone(),
+                        anchor: Anchor {
+                            id: nav_point.content.get_anchor_id(),
+                            start_pos: 0,
+                            end_pos: 0,
+                        },
+                        children: sub_children,
+                    }
+                })
+                .collect(),
+            None => vec![],
         }
     }
 }

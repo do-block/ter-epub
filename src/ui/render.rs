@@ -1,3 +1,5 @@
+use super::app::App;
+use crate::book::{Book, Toc};
 use ratatui::{
     layout::{Constraint, Direction, Layout},
     style::{Color, Style},
@@ -6,8 +8,6 @@ use ratatui::{
     Frame,
 };
 use ratatui::{prelude::*, widgets::*};
-use crate::book::Book;
-use super::app::App;
 
 pub fn render(frame: &mut Frame, book: &Book, app: &mut App) {
     let mut content_title = String::new();
@@ -18,7 +18,7 @@ pub fn render(frame: &mut Frame, book: &Book, app: &mut App) {
         .begin_symbol(Some("↑"))
         .end_symbol(Some("↓"));
 
-    let mut items = vec![];
+    let mut outlines = vec![];
     book.toc.iter().for_each(|item| {
         let mut select_tag = ' ';
         let mut fg = Style::default().fg(Color::LightCyan);
@@ -28,29 +28,21 @@ pub fn render(frame: &mut Frame, book: &Book, app: &mut App) {
             fg = get_select_fg(true);
         }
 
-        items.push(Line::from(vec![Span::styled(
+        outlines.push(Line::from(vec![Span::styled(
             format!("{} {}", select_tag, item.title.clone()),
             fg,
         )]));
+
         index += 1;
-        if !item.children.is_empty() {
-            item.children.iter().for_each(|child| {
-                if child.title.trim() != item.title.trim() {
-                    let mut select_tag = ' ';
-                    let mut fg = Style::default().fg(Color::White);
-                    if index == book.selected {
-                        content_title = child.title.clone();
-                        select_tag = '*';
-                        fg = get_select_fg(true);
-                    }
-                    items.push(Line::from(vec![Span::styled(
-                        format!("  {} {}", select_tag, child.title.clone()),
-                        fg,
-                    )]));
-                }
-                index += 1;
-            });
-        }
+
+        process_node(
+            &item,
+            1,
+            &book,
+            &mut outlines,
+            &mut index,
+            &mut content_title,
+        )
     });
 
     let size = frame.size();
@@ -61,7 +53,7 @@ pub fn render(frame: &mut Frame, book: &Book, app: &mut App) {
         .split(size);
 
     // -------- outline scroll config start --------
-    let outline_line_count = items.len();
+    let outline_line_count = outlines.len();
     let outline_index_text = format!("[{}/{}]", outline_line_count + 1, book.selected + 1);
     let mut outline_titile = Title::from(format!("大纲 {}", outline_index_text).white().on_gray());
     if !app.focus_content {
@@ -71,7 +63,7 @@ pub fn render(frame: &mut Frame, book: &Book, app: &mut App) {
         .outline_vertical_scroll_state
         .content_length(outline_line_count);
     frame.render_widget(
-        Paragraph::new(items)
+        Paragraph::new(outlines)
             .block(
                 Block::default()
                     .title(outline_titile)
@@ -88,8 +80,6 @@ pub fn render(frame: &mut Frame, book: &Book, app: &mut App) {
         &mut app.outline_vertical_scroll_state,
     );
     // -------- outline scroll config end --------
-    
-    // let pure_text =  html_to_text(&book.context);
     let content = format!("{}", &book.context);
 
     // -------- content scroll config start --------
@@ -119,5 +109,36 @@ fn get_select_fg(light: bool) -> Style {
         Style::default().bg(Color::LightBlue).fg(Color::White)
     } else {
         Style::default().bg(Color::Blue).fg(Color::Cyan)
+    }
+}
+
+fn process_node(
+    item: &Toc,
+    depth: usize,
+    book: &Book,
+    outlines: &mut Vec<Line>,
+    index: &mut usize,
+    content_title: &mut String,
+) {
+    if !item.children.is_empty() {
+        item.children.iter().for_each(|child| {
+            if child.title.trim() != item.title.trim() {
+                let mut select_tag = ' ';
+                let mut fg = Style::default().fg(Color::White);
+                if *index == book.selected {
+                    *content_title = child.title.clone();
+                    select_tag = '*';
+                    fg = get_select_fg(true);
+                }
+                let indent = "  ".repeat(depth); // 缩进来表示层级
+                outlines.push(Line::from(vec![Span::styled(
+                    format!("{}{} {}", indent, select_tag, child.title.clone()),
+                    fg,
+                )]));
+                *index += 1;
+                // 递归调用处理子节点
+                process_node(child, depth + 1, book, outlines, index, content_title);
+            }
+        });
     }
 }

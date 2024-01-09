@@ -41,10 +41,6 @@ fn main() -> io::Result<()> {
     let mut book = parse_epub_structure(file_name, dir)?;
 
     let _ = ui::show::start(&mut book);
-     
-    // let html_value =  "<p>Hello, <b>world!</b></p><pre><code>fn main() {\n    println!(\"Hello, world!\");\n}</code></pre>";
-    // let text = htmltotext::html_to_text(html_value);
-    // println!("text: {}", text);
 
     Ok(())
 }
@@ -82,8 +78,6 @@ fn parse_epub_structure(book_path: &str, dir: (PathBuf, bool)) -> io::Result<Boo
                     println!("mimetype 文件读取成功: {}", content);
 
                     let root_file = read_meta_inf(&path);
-
-                    // println!("root_file: {:?}", root_file);
 
                     // 判断是否存在 root_file 文件
                     let opf_file_path = path.parent().unwrap().join(root_file);
@@ -128,7 +122,7 @@ fn parse_epub_structure(book_path: &str, dir: (PathBuf, bool)) -> io::Result<Boo
         //  写入文件到TOC_FILE_NAME
         let toc_file_path = dest_dir.join(TOC_FILE_NAME);
 
-        // 如果文件存在，提示超过30天，需要更新索引吗？
+        // TODO: if file exist, prompt update index? 30 day
         if !toc_file_path.exists() {
             book.generate_anchor_positions()?;
             book.flatten_toc();
