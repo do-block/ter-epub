@@ -46,7 +46,7 @@ cargo run -- path/to/your/book.epub
 - q：退出阅读器
 - 数字键：快速跳转到对应的章节
 
-<img width="800" alt="image" src="https://github.com/daiw-ing/ter-epub/assets/62934849/2e6c7677-fde0-47b9-9fc8-65fc6888bbe5">
+<img width="800" alt="image" src="https://github.com/error-moe/ter-epub/assets/62934849/8d3b5c1a-cf3e-4a3a-a0a7-4ccc09761dc0">
 
 
 ### 通知
