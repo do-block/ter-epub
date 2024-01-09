@@ -19,3 +19,4 @@ ratatui = { version = "0.25.0", features = ["serde"] }
 crossterm = "0.27.0"
 html5ever = "0.26.0"
 markup5ever_rcdom = "0.2.0"
+html2text = "0.10.2"

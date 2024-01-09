@@ -1,13 +1,12 @@
+use html2text::from_read_with_decorator;
+use html2text::render::text_renderer::TrivialDecorator;
+use regex::Regex;
+use serde::{Deserialize, Serialize};
 use std::{
     fs::File,
     io::{BufRead, BufReader},
     path::PathBuf,
 };
-
-use regex::Regex;
-use serde::{Deserialize, Serialize};
-
-use crate::htmltotext::html_to_text;
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
 pub struct Book {
@@ -73,7 +72,12 @@ impl Book {
                     .join("\n");
             }
 
-            self.context = html_to_text(&content);
+            // self.context = html_to_text(&content);
+
+            let pure_text =
+                from_read_with_decorator(content.as_bytes(), 1400, TrivialDecorator::new());
+
+            self.context = pure_text;
         }
     }
 
