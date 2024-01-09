@@ -22,7 +22,7 @@ use toc::Ncx;
 
 const EPUB_MIME_TYPE: &str = "application/epub+zip";
 const TEMP_DIR_NAME: &str = ".epub_reader_temp";
-// 存储章节和锚点对应的文件
+// Save the file corresponding to the chapter and anchor
 const TOC_FILE_NAME: &str = ".dtoc";
 
 fn parse_container_xml(xml: &str) -> Container {
@@ -52,7 +52,6 @@ fn parse_epub_structure(book_path: &str, dir: (PathBuf, bool)) -> io::Result<Boo
     }
 
     println!("开始读取文件...");
-
     let mut book = Book::default();
 
     // 判断是否是文件夹， 读取本地缓存文件夹，文件夹的名称是书籍的名称
