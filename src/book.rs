@@ -145,7 +145,7 @@ impl Book {
         Ok(())
     }
 
-    // 扁平化 TOC 项
+    // flat TOC 
     pub fn flatten_toc(&mut self) {
         let mut flat_toc = Vec::new();
         for toc in &self.toc {
