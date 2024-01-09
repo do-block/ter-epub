@@ -72,12 +72,8 @@ impl Book {
                     .join("\n");
             }
 
-            // self.context = html_to_text(&content);
-
-            let pure_text =
+            self.context =
                 from_read_with_decorator(content.as_bytes(), 1400, TrivialDecorator::new());
-
-            self.context = pure_text;
         }
     }
 

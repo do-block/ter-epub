@@ -326,26 +326,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a26ae43d7bcc3b814de94796a5e736d4029efb0ee900c12e2d54c993ad1a1e07"
 
 [[package]]
-name = "epub-parser"
-version = "0.1.0"
-dependencies = [
- "crossterm",
- "dirs-next",
- "html2text",
- "html5ever",
- "markup5ever_rcdom",
- "quick-xml",
- "ratatui",
- "regex",
- "scraper",
- "serde",
- "serde_json",
- "termion",
- "textwrap",
- "zip",
-]
-
-[[package]]
 name = "flate2"
 version = "1.0.28"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1186,6 +1166,26 @@ dependencies = [
  "futf",
  "mac",
  "utf-8",
+]
+
+[[package]]
+name = "ter-epub"
+version = "0.1.0"
+dependencies = [
+ "crossterm",
+ "dirs-next",
+ "html2text",
+ "html5ever",
+ "markup5ever_rcdom",
+ "quick-xml",
+ "ratatui",
+ "regex",
+ "scraper",
+ "serde",
+ "serde_json",
+ "termion",
+ "textwrap",
+ "zip",
 ]
 
 [[package]]

@@ -89,9 +89,7 @@ fn parse_epub_structure(book_path: &str, dir: (PathBuf, bool)) -> io::Result<Boo
                     let ncx_file_path = opf_file_path.parent().unwrap().join("toc.ncx");
 
                     if ncx_file_path.exists() {
-                        // 生成大纲
                         ncx = Ncx::read_text(&ncx_file_path);
-                        // println!("ncx: {:#?}", ncx);
                     }
                 }
             }
