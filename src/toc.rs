@@ -1,12 +1,9 @@
 use std::fs::File;
 use std::io::Read;
 use std::path::PathBuf;
-
 use serde::Deserialize;
-
 use quick_xml::de::from_str;
 use quick_xml::{self, Reader};
-
 use crate::book::{Anchor, Toc};
 
 #[derive(Debug, PartialEq, Default, Deserialize)]
@@ -34,7 +31,6 @@ pub struct NavPoint {
 
 impl NavPoint {
     pub fn get_toc(&self) -> Toc {
-        // 使用辅助函数构建子目录
         let children = self.build_children_toc(&self.nav_point);
 
         Toc {
@@ -49,7 +45,6 @@ impl NavPoint {
         }
     }
 
-    // 辅助函数，递归地构建子目录
     fn build_children_toc(&self, nav_points: &Option<Vec<NavPoint>>) -> Vec<Toc> {
         match nav_points {
             Some(points) => points

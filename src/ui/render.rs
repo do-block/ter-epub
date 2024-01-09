@@ -81,7 +81,6 @@ pub fn render(frame: &mut Frame, book: &Book, app: &mut App) {
     );
     // -------- outline scroll config end --------
     let content = format!("{}", &book.context);
-
     // -------- content scroll config start --------
     app.content_vertical_scroll_state = app
         .content_vertical_scroll_state

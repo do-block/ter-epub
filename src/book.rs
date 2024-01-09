@@ -38,7 +38,7 @@ pub struct Anchor {
 }
 
 impl Book {
-    // 读取章节文件
+    // Read the chapter file
     pub fn read_and_show_text(&mut self) {
         if self.selected >= self.flat_toc.len() {
             return;
@@ -50,25 +50,27 @@ impl Book {
         if file_path.exists() {
             let file = File::open(&file_path).unwrap();
             let reader = BufReader::new(file);
-            let mut content = String::new();
             let start = toc.anchor.start_pos;
             let end = toc.anchor.end_pos;
+            let content: String;
 
             if start == 0 && end == 0 {
-                // 如果start和end为0，读取整个文件
+                // If start and end are 0, read the entire file
                 content = reader
                     .lines()
                     .map(|line| line.unwrap())
                     .collect::<Vec<String>>()
                     .join("\n");
             } else {
-                // 仅读取指定范围的行
-                for (index, line) in reader.lines().enumerate() {
-                    if index >= start && index <= end {
-                        content.push_str(&line.unwrap());
-                        content.push('\n');
-                    }
-                }
+                // Only read the lines in the specified range
+                content = reader
+                    .lines()
+                    .enumerate()
+                    .skip(start)
+                    .take(end - start)
+                    .map(|(_, line)| line.unwrap())
+                    .collect::<Vec<String>>()
+                    .join("\n");
             }
 
             self.context = html_to_text(&content);
@@ -78,7 +80,7 @@ impl Book {
     pub fn generate_anchor_positions(&mut self) -> Result<(), std::io::Error> {
         let mut anchor_positions = Vec::new();
 
-        // 收集所有锚点的位置
+        // Collect the positions of all anchors
         for toc in &self.toc {
             self.collect_anchor_positions(&toc, &mut anchor_positions)?;
         }
@@ -145,7 +147,7 @@ impl Book {
         Ok(())
     }
 
-    // flat TOC 
+    // Flat Toc
     pub fn flatten_toc(&mut self) {
         let mut flat_toc = Vec::new();
         for toc in &self.toc {
